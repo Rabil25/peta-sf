@@ -72,9 +72,14 @@
 
     let telegramToCodeSF = {};
     let telegramToName = {};
+    let telegramToRole = {};
     let codeSFWithIO = new Set();
     let allSFNames = new Set();
     let absenSFNames = new Set();
+
+    function capitalizeWords(str) {
+      return str.replace(/\b\w/g, l => l.toUpperCase());
+    }
 
     function loadUserdata(cb) {
       Papa.parse(userdataCSV, {
@@ -83,12 +88,14 @@
           result.data.forEach(row => {
             const id = row[7];
             const code = row[5];
-            const nama = row[2]; // Kolom C (index 2)
+            const nama = capitalizeWords(row[2] || '');
+            const role = (row[4] || '').toLowerCase();
             if (id) {
               if (code) telegramToCodeSF[id] = code;
               if (nama) telegramToName[id] = nama;
+              if (role) telegramToRole[id] = role;
+              if (role === 'sf') allSFNames.add(nama);
             }
-            if (nama) allSFNames.add(nama);
           });
           cb();
         }
@@ -129,7 +136,8 @@
 
             const code = telegramToCodeSF[idTelegram];
             const nama = telegramToName[idTelegram];
-            if (!code || !nama || isNaN(lat) || isNaN(lng)) return;
+            const role = telegramToRole[idTelegram];
+            if (!code || !nama || !role || role !== 'sf' || isNaN(lat) || isNaN(lng)) return;
 
             absenSFNames.add(nama);
 
@@ -164,11 +172,13 @@
     }
 
     function isToday(str) {
-      const d = new Date(str);
+      const match = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (!match) return false;
+      const [_, d, m, y] = match;
       const now = new Date();
-      return d.getFullYear() === now.getFullYear() &&
-             d.getMonth() === now.getMonth() &&
-             d.getDate() === now.getDate();
+      return now.getFullYear() === parseInt(y) &&
+             now.getMonth() + 1 === parseInt(m) &&
+             now.getDate() === parseInt(d);
     }
 
     loadUserdata(() => {
