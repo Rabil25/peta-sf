@@ -172,14 +172,12 @@
     }
 
     function isToday(str) {
-      const match = str.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-      if (!match) return false;
-      const [_, d, m, y] = match;
-      const now = new Date();
-      return now.getFullYear() === parseInt(y) &&
-             now.getMonth() + 1 === parseInt(m) &&
-             now.getDate() === parseInt(d);
-    }
+  const date = new Date(str);
+  const now = new Date();
+  return date.getFullYear() === now.getFullYear() &&
+         date.getMonth() === now.getMonth() &&
+         date.getDate() === now.getDate();
+}
 
     loadUserdata(() => {
       loadBulanIni(() => {
