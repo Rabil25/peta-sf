@@ -1,53 +1,136 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Live Peta SF - Absensi Hari Ini</title>
+  <title>Peta Lokasi SF (Absen & Deal)</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
-    #map { height: 100vh; }
+    body { margin: 0; }
+    #map { height: 100vh; width: 100%; }
+    #sidebar {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-family: sans-serif;
+      font-size: 14px;
+    }
+    #sidebar h3 {
+      margin: 0 0 5px 0;
+      color: #d00;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div id="sidebar">
+    <h3>Total Deal SF</h3>
+    <div id="totalDeal">Loading...</div>
+  </div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
-    const map = L.map('map').setView([-2.13456, 106.13456], 10); // Tengah Bangka
+    const map = L.map('map').setView([-2.13456, 106.13456], 10);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      attribution: 'Tiles © Esri'
     }).addTo(map);
 
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1291668973&single=true&output=csv';
+    const absenCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1291668973&single=true&output=csv';
+    const userdataCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1651680381&single=true&output=csv';
+    const bulanIniCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1666449039&single=true&output=csv';
 
-    function isToday(dateString) {
-      const today = new Date();
-      const date = new Date(dateString);
-      return date.getFullYear() === today.getFullYear() &&
-             date.getMonth() === today.getMonth() &&
-             date.getDate() === today.getDate();
+    const todayStr = new Date().toISOString().slice(0,10).replace(/-/g, "");
+
+    let telegramToCodeSF = {};
+    let codeSFWithIO = new Set();
+
+    function loadUserdata(cb) {
+      Papa.parse(userdataCSV, {
+        download: true,
+        complete: (result) => {
+          result.data.forEach(row => {
+            const id = row[7];
+            const code = row[5];
+            if (id && code) telegramToCodeSF[id] = code;
+          });
+          cb();
+        }
+      });
     }
 
-    fetch(csvUrl)
-      .then(response => response.text())
-      .then(csv => {
-        const rows = csv.trim().split("\n").slice(1);
-        rows.forEach(row => {
-          const cols = row.split(",");
-          const waktu = cols[0];
-          const namaSF = cols[2];
-          const lat = parseFloat(cols[5]);
-          const lng = parseFloat(cols[6]);
-
-          if (!isNaN(lat) && !isNaN(lng) && isToday(waktu)) {
-            L.marker([lat, lng]).addTo(map)
-              .bindPopup(`<b>${namaSF}</b><br>${waktu}`);
-          }
-        });
+    function loadBulanIni(cb) {
+      let total = 0;
+      Papa.parse(bulanIniCSV, {
+        download: true,
+        complete: (result) => {
+          result.data.forEach(row => {
+            const code = row[83];
+            const validIO = row[73];
+            const tanggal = row[74];
+            if (validIO) total++;
+            if (validIO && tanggal === todayStr && code) codeSFWithIO.add(code);
+          });
+          document.getElementById("totalDeal").textContent = `Total Deal Semua SF: ${total}`;
+          cb();
+        }
       });
+    }
+
+    function loadAbsen() {
+      Papa.parse(absenCSV, {
+        download: true,
+        header: true,
+        complete: (result) => {
+          result.data.forEach(row => {
+            const waktu = row['Timestamp'];
+            const idTelegram = row['ID Telegram'];
+            const nama = row['Nama SF'];
+            const lat = parseFloat(row['Latitude']);
+            const lng = parseFloat(row['Longitude']);
+            if (!waktu || !isToday(waktu)) return;
+
+            const code = telegramToCodeSF[idTelegram];
+            if (!code || isNaN(lat) || isNaN(lng)) return;
+
+            const hasIO = codeSFWithIO.has(code);
+            const warna = hasIO ? 'green' : 'blue';
+
+            const icon = L.circleMarker([lat, lng], {
+              radius: 8,
+              color: warna,
+              fillColor: warna,
+              fillOpacity: 1
+            }).addTo(map);
+
+            icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
+          });
+        }
+      });
+    }
+
+    function isToday(str) {
+      const d = new Date(str);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() &&
+             d.getMonth() === now.getMonth() &&
+             d.getDate() === now.getDate();
+    }
+
+    // Chain loading
+    loadUserdata(() => {
+      loadBulanIni(() => {
+        loadAbsen();
+      });
+    });
+
+    setTimeout(() => location.reload(), 30000); // Auto refresh tiap 30 detik
   </script>
 </body>
 </html>
