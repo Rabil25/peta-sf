@@ -163,11 +163,12 @@
             const hasIO = codeSFWithIO.has(code);
             const warna = hasIO ? 'green' : 'blue';
 
-            const icon = L.circleMarker([lat, lng], {
+            const softWarna = warna === 'green' ? '#88cc88' : '#88bbee';
+const icon = L.circleMarker([lat, lng], {
   radius: 8,
-  color: warna,
-  fillColor: warna,
-  fillOpacity: 1,
+  color: softWarna,
+  fillColor: softWarna,
+  fillOpacity: 0.9,
   weight: 2
 }).addTo(map);
 
