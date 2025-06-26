@@ -163,14 +163,13 @@
             const hasIO = codeSFWithIO.has(code);
             const warna = hasIO ? 'green' : 'blue';
 
-            const icon = L.marker([lat, lng], {
-              icon: L.icon({
-                iconUrl: `https://chart.googleapis.com/chart?chst=d_map_pin_letter&chld=%E2%80%A2|${warna}`,
-                iconSize: [21, 34],
-                iconAnchor: [10, 34],
-                popupAnchor: [0, -34]
-              })
-            }).addTo(map);
+            const icon = L.circleMarker([lat, lng], {
+  radius: 8,
+  color: warna,
+  fillColor: warna,
+  fillOpacity: 1,
+  weight: 2
+}).addTo(map);
 
             icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
           });
