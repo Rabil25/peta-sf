@@ -132,7 +132,7 @@
           result.data.forEach(row => {
             if (!row) return;
             const waktu = row['Timestamp'] || row[0];
-            const idTelegram = row['ID Telegram'];
+            const idTelegram = row['User ID'];
             const lat = parseFloat(row['Latitude']);
             const lng = parseFloat(row['Longitude']);
             if (!waktu || !isToday(waktu)) return;
