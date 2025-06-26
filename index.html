@@ -175,12 +175,16 @@
     }
 
     function isToday(str) {
-      const date = new Date(str);
-      if (isNaN(date)) return false;
+      if (!str || typeof str !== 'string') return false;
+      const parts = str.split(' ')[0].split('-');
+      if (parts.length !== 3) return false;
+      const [year, month, day] = parts.map(Number);
       const now = new Date();
-      return date.getFullYear() === now.getFullYear() &&
-             date.getMonth() === now.getMonth() &&
-             date.getDate() === now.getDate();
+      return (
+        now.getFullYear() === year &&
+        now.getMonth() + 1 === month &&
+        now.getDate() === day
+      );
     }
 
     loadUserdata(() => {
