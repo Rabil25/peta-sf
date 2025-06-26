@@ -71,6 +71,7 @@
     const todayStr = new Date().toISOString().slice(0,10).replace(/-/g, "");
 
     let telegramToCodeSF = {};
+    let telegramToName = {};
     let codeSFWithIO = new Set();
     let allSFNames = new Set();
     let absenSFNames = new Set();
@@ -82,8 +83,11 @@
           result.data.forEach(row => {
             const id = row[7];
             const code = row[5];
-            const nama = row[3];
-            if (id && code) telegramToCodeSF[id] = code;
+            const nama = row[2]; // Kolom C (index 2)
+            if (id) {
+              if (code) telegramToCodeSF[id] = code;
+              if (nama) telegramToName[id] = nama;
+            }
             if (nama) allSFNames.add(nama);
           });
           cb();
@@ -119,13 +123,13 @@
           result.data.forEach(row => {
             const waktu = row['Timestamp'];
             const idTelegram = row['ID Telegram'];
-            const nama = row['Nama SF'];
             const lat = parseFloat(row['Latitude']);
             const lng = parseFloat(row['Longitude']);
             if (!waktu || !isToday(waktu)) return;
 
             const code = telegramToCodeSF[idTelegram];
-            if (!code || isNaN(lat) || isNaN(lng)) return;
+            const nama = telegramToName[idTelegram];
+            if (!code || !nama || isNaN(lat) || isNaN(lng)) return;
 
             absenSFNames.add(nama);
 
@@ -142,7 +146,6 @@
             icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
           });
 
-          // Tampilkan SF yang belum absen
           const notAbsentList = document.getElementById("notAbsentList");
           notAbsentList.innerHTML = '';
           const belumAbsen = Array.from(allSFNames).filter(nama => !absenSFNames.has(nama));
@@ -152,7 +155,6 @@
             notAbsentList.appendChild(li);
           });
 
-          // Tambahkan statistik ke sidebar kiri
           document.getElementById("absenStats").innerHTML = `
             ✅ SF Absen: ${absenSFNames.size}<br>
             ❌ SF Belum Absen: ${belumAbsen.length}
@@ -169,14 +171,13 @@
              d.getDate() === now.getDate();
     }
 
-    // Chain loading
     loadUserdata(() => {
       loadBulanIni(() => {
         loadAbsen();
       });
     });
 
-    setTimeout(() => location.reload(), 30000); // Auto refresh tiap 30 detik
+    setTimeout(() => location.reload(), 30000);
   </script>
 </body>
 </html>
