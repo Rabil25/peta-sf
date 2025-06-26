@@ -8,10 +8,9 @@
   <style>
     body { margin: 0; }
     #map { height: 100vh; width: 100%; }
-    #sidebar {
+    #sidebar-left, #sidebar-right {
       position: absolute;
       top: 10px;
-      right: 10px;
       background: white;
       padding: 10px;
       border-radius: 8px;
@@ -19,17 +18,40 @@
       z-index: 1000;
       font-family: sans-serif;
       font-size: 14px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
-    #sidebar h3 {
+    #sidebar-left { left: 10px; width: 250px; }
+    #sidebar-right { right: 10px; }
+    #sidebar-left h3, #sidebar-right h3 {
       margin: 0 0 5px 0;
       color: #d00;
+    }
+    #notAbsentListWrapper {
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 5px;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+    #notAbsentList li {
+      list-style: none;
+      margin-bottom: 3px;
     }
   </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="sidebar">
-    <h3>Total Deal SF</h3>
+  <div id="sidebar-left">
+    <h3>Cek POS</h3>
+    <div id="absenStats">Loading...</div>
+    <div id="notAbsentListWrapper">
+      <ul id="notAbsentList">Loading...</ul>
+    </div>
+  </div>
+  <div id="sidebar-right">
+    <h3>Total Deal Hari Ini</h3>
     <div id="totalDeal">Loading...</div>
   </div>
 
@@ -50,6 +72,8 @@
 
     let telegramToCodeSF = {};
     let codeSFWithIO = new Set();
+    let allSFNames = new Set();
+    let absenSFNames = new Set();
 
     function loadUserdata(cb) {
       Papa.parse(userdataCSV, {
@@ -58,7 +82,9 @@
           result.data.forEach(row => {
             const id = row[7];
             const code = row[5];
+            const nama = row[3];
             if (id && code) telegramToCodeSF[id] = code;
+            if (nama) allSFNames.add(nama);
           });
           cb();
         }
@@ -66,7 +92,7 @@
     }
 
     function loadBulanIni(cb) {
-      let total = 0;
+      let totalToday = 0;
       Papa.parse(bulanIniCSV, {
         download: true,
         complete: (result) => {
@@ -74,10 +100,12 @@
             const code = row[83];
             const validIO = row[73];
             const tanggal = row[74];
-            if (validIO) total++;
-            if (validIO && tanggal === todayStr && code) codeSFWithIO.add(code);
+            if (validIO && tanggal === todayStr && code) {
+              codeSFWithIO.add(code);
+              totalToday++;
+            }
           });
-          document.getElementById("totalDeal").textContent = `Total Deal Semua SF: ${total}`;
+          document.getElementById("totalDeal").textContent = `Total Deal Hari Ini: ${totalToday}`;
           cb();
         }
       });
@@ -99,6 +127,8 @@
             const code = telegramToCodeSF[idTelegram];
             if (!code || isNaN(lat) || isNaN(lng)) return;
 
+            absenSFNames.add(nama);
+
             const hasIO = codeSFWithIO.has(code);
             const warna = hasIO ? 'green' : 'blue';
 
@@ -111,6 +141,22 @@
 
             icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
           });
+
+          // Tampilkan SF yang belum absen
+          const notAbsentList = document.getElementById("notAbsentList");
+          notAbsentList.innerHTML = '';
+          const belumAbsen = Array.from(allSFNames).filter(nama => !absenSFNames.has(nama));
+          belumAbsen.forEach(nama => {
+            const li = document.createElement("li");
+            li.textContent = `• ${nama}`;
+            notAbsentList.appendChild(li);
+          });
+
+          // Tambahkan statistik ke sidebar kiri
+          document.getElementById("absenStats").innerHTML = `
+            ✅ SF Absen: ${absenSFNames.size}<br>
+            ❌ SF Belum Absen: ${belumAbsen.length}
+          `;
         }
       });
     }
