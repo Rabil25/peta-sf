@@ -164,12 +164,13 @@
             const warna = hasIO ? 'green' : 'blue';
 
             const softWarna = warna === 'green' ? '#88cc88' : '#88bbee';
-const icon = L.circleMarker([lat, lng], {
-  radius: 8,
-  color: softWarna,
-  fillColor: softWarna,
-  fillOpacity: 0.9,
-  weight: 2
+const icon = L.marker([lat, lng], {
+  icon: L.icon({
+    iconUrl: `https://chart.googleapis.com/chart?chst=d_map_pin_icon&chld=location|${softWarna.replace('#','')}`,
+    iconSize: [24, 36],
+    iconAnchor: [12, 36],
+    popupAnchor: [0, -36]
+  })
 }).addTo(map);
 
             icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
