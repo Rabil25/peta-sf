@@ -172,12 +172,12 @@
     }
 
     function isToday(str) {
-  const date = new Date(str);
-  const now = new Date();
-  return date.getFullYear() === now.getFullYear() &&
-         date.getMonth() === now.getMonth() &&
-         date.getDate() === now.getDate();
-}
+      const date = new Date(str);
+      const now = new Date();
+      return date.getFullYear() === now.getFullYear() &&
+             date.getMonth() === now.getMonth() &&
+             date.getDate() === now.getDate();
+    }
 
     loadUserdata(() => {
       loadBulanIni(() => {
