@@ -77,6 +77,7 @@
     <div id="totalDeal">Loading...</div>
   </div>
   <div id="tanggal-hari-ini"></div>
+
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
   <script>
@@ -85,21 +86,146 @@
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       })}`;
 
-    const map = L.map('map').setView([-2.13456, 106.13456], 10);
+    const absenCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1291668973&single=true&output=csv';
+    const userdataCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1651680381&single=true&output=csv';
+    const bulanIniCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1666449039&single=true&output=csv';
 
+    const map = L.map('map').setView([-2.13456, 106.13456], 10);
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
     const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
     const esriLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { attribution: 'Labels © Esri' });
-
     const hybrid = L.layerGroup([esriSat, esriLabels]);
-
-    const baseMaps = {
-      "Peta Jalan": osm,
-      "Citra Satelit + Label": hybrid
-    };
-
+    const baseMaps = { "Peta Jalan": osm, "Citra Satelit + Label": hybrid };
     hybrid.addTo(map);
     L.control.layers(baseMaps).addTo(map);
+
+    let telegramToCodeSF = {}, telegramToName = {}, telegramToRole = {};
+    let codeSFWithIO = new Set(), allSFNames = new Set(), absenSFNames = new Set();
+
+    function capitalizeWords(str) {
+      return str.replace(/\b\w/g, l => l.toUpperCase());
+    }
+
+    function loadUserdata(cb) {
+      Papa.parse(userdataCSV, {
+        download: true,
+        complete: (result) => {
+          result.data.forEach(row => {
+            if (!row || row.length < 8) return;
+            const id = row[7];
+            const code = row[5];
+            const nama = capitalizeWords(row[2] || '');
+            const role = (row[4] || '').toLowerCase();
+            if (id) {
+              if (code) telegramToCodeSF[id] = code;
+              if (nama) telegramToName[id] = nama;
+              if (role) telegramToRole[id] = role;
+              if (role === 'sf') allSFNames.add(nama);
+            }
+          });
+          cb();
+        }
+      });
+    }
+
+    function loadBulanIni(cb) {
+      let totalToday = 0;
+      const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+      Papa.parse(bulanIniCSV, {
+        download: true,
+        complete: (result) => {
+          result.data.forEach(row => {
+            if (!row || row.length < 85) return;
+            const code = row[83];
+            const validIO = row[73];
+            const tanggal = row[74];
+            if (validIO && tanggal === todayStr && code) {
+              codeSFWithIO.add(code);
+              totalToday++;
+            }
+          });
+          document.getElementById("totalDeal").textContent = `Total Deal Hari Ini: ${totalToday}`;
+          cb();
+        }
+      });
+    }
+
+    function loadAbsen() {
+      Papa.parse(absenCSV, {
+        download: true,
+        header: true,
+        complete: (result) => {
+          result.data.forEach(row => {
+            if (!row) return;
+            const waktu = row['Timestamp'] || row[0];
+            const idTelegram = String(row['User ID']).trim();
+            const lat = parseFloat(row['Latitude']);
+            const lng = parseFloat(row['Longitude']);
+            if (!waktu || !isToday(waktu)) return;
+            const code = telegramToCodeSF[idTelegram];
+            const nama = telegramToName[idTelegram];
+            const role = telegramToRole[idTelegram];
+            if (!code || !nama || !role || role !== 'sf' || isNaN(lat) || isNaN(lng)) return;
+            absenSFNames.add(nama);
+            const hasIO = codeSFWithIO.has(code);
+            const warna = hasIO ? '#4CAF50' : '#2196F3';
+            const icon = L.circleMarker([lat, lng], {
+              radius: 8,
+              color: warna,
+              fillColor: warna,
+              fillOpacity: 0.9,
+              weight: 2
+            }).addTo(map);
+            icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
+          });
+
+          const notAbsentList = document.getElementById("notAbsentList");
+          notAbsentList.innerHTML = '';
+          const belumAbsen = Array.from(allSFNames).filter(nama => !absenSFNames.has(nama));
+          belumAbsen.forEach(nama => {
+            const li = document.createElement("li");
+            li.textContent = `• ${nama}`;
+            notAbsentList.appendChild(li);
+          });
+
+          document.getElementById("absenStats").innerHTML = `
+            ✅ SF Absen: ${absenSFNames.size}<br>
+            ❌ SF Belum Absen: ${belumAbsen.length}
+          `;
+        }
+      });
+    }
+
+    function isToday(str) {
+      if (!str || typeof str !== 'string') return false;
+      const parts = str.split(' ')[0].split('-');
+      if (parts.length !== 3) return false;
+      const [year, month, day] = parts.map(Number);
+      const now = new Date();
+      return (
+        now.getFullYear() === year &&
+        now.getMonth() + 1 === month &&
+        now.getDate() === day
+      );
+    }
+
+    document.getElementById("btn-left").addEventListener("click", () => {
+      const panel = document.getElementById("sidebar-left");
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.getElementById("btn-right").addEventListener("click", () => {
+      const panel = document.getElementById("sidebar-right");
+      panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+    });
+
+    loadUserdata(() => {
+      loadBulanIni(() => {
+        loadAbsen();
+      });
+    });
+
+    setTimeout(() => location.reload(), 300000); // auto refresh 5 menit
   </script>
 </body>
 </html>
