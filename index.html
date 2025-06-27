@@ -8,6 +8,7 @@
   <style>
     body { margin: 0; }
     #map { height: 100vh; width: 100%; }
+
     #sidebar-left, #sidebar-right {
       position: absolute;
       top: 10px;
@@ -21,12 +22,15 @@
       max-height: 90vh;
       overflow-y: auto;
     }
+
     #sidebar-left { left: 10px; width: 250px; }
     #sidebar-right { right: 10px; }
+
     #sidebar-left h3, #sidebar-right h3 {
       margin: 0 0 5px 0;
       color: #d00;
     }
+
     #notAbsentListWrapper {
       margin-top: 10px;
       border: 1px solid #ccc;
@@ -34,11 +38,14 @@
       padding: 5px;
       max-height: 250px;
       overflow-y: auto;
+      font-size: 13px;
     }
+
     #notAbsentList li {
       list-style: none;
       margin-bottom: 3px;
     }
+
     #tanggal-hari-ini {
       position: absolute;
       bottom: 10px;
@@ -51,10 +58,43 @@
       font-size: 14px;
       z-index: 1000;
     }
+
+    .toggle-btn {
+      display: none;
+      position: absolute;
+      top: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 13px;
+      cursor: pointer;
+      z-index: 1001;
+    }
+
+    #toggle-left { left: 10px; }
+    #toggle-right { right: 10px; }
+
+    @media (max-width: 600px) {
+      #sidebar-left,
+      #sidebar-right {
+        display: none;
+        width: 85vw;
+        font-size: 13px;
+        padding: 8px;
+      }
+
+      .toggle-btn {
+        display: block;
+      }
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
+  <div id="toggle-left" class="toggle-btn">👤 Cek POS</div>
+  <div id="toggle-right" class="toggle-btn">📊 Deal</div>
+
   <div id="sidebar-left">
     <h3>Cek POS</h3>
     <div id="absenStats">Loading...</div>
@@ -62,10 +102,12 @@
       <ul id="notAbsentList">Loading...</ul>
     </div>
   </div>
+
   <div id="sidebar-right">
     <h3>Total Deal Hari Ini</h3>
     <div id="totalDeal">Loading...</div>
   </div>
+
   <div id="tanggal-hari-ini"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -161,16 +203,15 @@
             absenSFNames.add(nama);
 
             const hasIO = codeSFWithIO.has(code);
-            const warna = hasIO ? 'green' : 'blue';
+            const warna = hasIO ? '#4CAF50' : '#2196F3';
 
-            const softWarna = warna === 'green' ? '#88cc88' : '#88bbee';
-const icon = L.circleMarker([lat, lng], {
-  radius: 8,
-  color: softWarna,
-  fillColor: softWarna,
-  fillOpacity: 0.9,
-  weight: 2
-}).addTo(map);
+            const icon = L.circleMarker([lat, lng], {
+              radius: 8,
+              color: warna,
+              fillColor: warna,
+              fillOpacity: 0.9,
+              weight: 2
+            }).addTo(map);
 
             icon.bindTooltip(nama, { permanent: true, direction: 'top' }).openTooltip();
           });
@@ -211,13 +252,22 @@ const icon = L.circleMarker([lat, lng], {
       });
     });
 
-    setTimeout(() => location.reload(), 300000); // 5 menit
+    document.getElementById("toggle-left").addEventListener("click", () => {
+      const el = document.getElementById("sidebar-left");
+      el.style.display = el.style.display === "block" ? "none" : "block";
+    });
 
-    // Tampilkan tanggal lokal hari ini
+    document.getElementById("toggle-right").addEventListener("click", () => {
+      const el = document.getElementById("sidebar-right");
+      el.style.display = el.style.display === "block" ? "none" : "block";
+    });
+
     document.getElementById("tanggal-hari-ini").textContent =
       `Hari Ini: ${now.toLocaleDateString('id-ID', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
       })}`;
+
+    setTimeout(() => location.reload(), 300000); // Refresh tiap 5 menit
   </script>
 </body>
 </html>
