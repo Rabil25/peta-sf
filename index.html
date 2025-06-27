@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Peta Lokasi SF (Absen & Deal)</title>
+  <title>Peta Lokasi SF (Absen & Deal) Futuristik</title>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -12,6 +12,8 @@
       margin: 0;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13px;
+      background: #0e0e0e;
+      color: #e0e0e0;
     }
     #map {
       height: 100vh;
@@ -20,65 +22,75 @@
       top: 0;
       left: 0;
       z-index: 0;
+      filter: contrast(1.2) brightness(1.05);
     }
     #logo {
       position: absolute;
       top: 10px;
-      right: 140px;
+      left: 50%;
+      transform: translateX(-50%);
       width: 120px;
       z-index: 1002;
     }
     #sidebar-left, #sidebar-right {
       position: absolute;
-      top: 50px;
-      background: rgba(255, 255, 255, 0.95);
-      padding: 8px;
-      border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      top: 60px;
+      background: rgba(20, 20, 20, 0.95);
+      padding: 10px;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(255,255,255,0.1);
       z-index: 1001;
-      font-size: 10px;
-      max-height: 75vh;
+      font-size: 12px;
+      max-height: 70vh;
       overflow-y: auto;
       display: none;
     }
-    #sidebar-left { left: 10px; width: 180px; }
-    #sidebar-right { right: 10px; width: 160px; }
+    #sidebar-left { left: 10px; width: 240px; }
+    #sidebar-right { right: 10px; width: 200px; }
     .toggle-btn {
       position: absolute;
-      padding: 5px 10px;
-      font-size: 10px;
-      background: white;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      padding: 6px 12px;
+      font-size: 13px;
+      background: #1a1a1a;
+      border-radius: 8px;
+      border: 1px solid #555;
+      box-shadow: 0 2px 4px rgba(255,255,255,0.2);
       cursor: pointer;
       z-index: 1003;
+      color: #fff;
     }
     #btn-left { left: 10px; top: 10px; }
-    #btn-right { right: 10px; top: 120px; }
+    #btn-right { right: 10px; top: 60px; }
     #notAbsentListWrapper { margin-top: 10px; }
-    #notAbsentList li { list-style: none; margin-bottom: 3px; }
+    #notAbsentList li { list-style: none; margin-bottom: 4px; }
     #tanggal-hari-ini {
       position: absolute;
       bottom: 10px;
-      left: 10px;
-      background: white;
-      padding: 5px 8px;
-      border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      font-size: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20,20,20,0.9);
+      padding: 6px 10px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.2);
+      font-size: 12px;
       z-index: 1000;
     }
     .sf-tooltip {
-      font-size: 9px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 2px 6px;
-      border-radius: 8px;
-      color: #000;
-      max-width: 120px;
+      font-size: 11px;
+      background: rgba(30, 30, 30, 0.85);
+      padding: 3px 7px;
+      border-radius: 10px;
+      color: #fff;
+      max-width: 140px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      border: 1px solid #444;
+    }
+    h3 {
+      margin-top: 0;
+      font-size: 14px;
+      color: #00ffe7;
     }
   </style>
 </head>
@@ -112,14 +124,13 @@
     const userdataCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1651680381&single=true&output=csv';
     const bulanIniCSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRwTyrQDZdI7VZquGlA2ilcpTtv2DAmTzQYqKml8jHqWqhUg5AdYIyvqkU2-QKmU6EKXsuT1wpr3rHT/pub?gid=1666449039&single=true&output=csv';
 
-    const map = L.map('map').setView([-2.13456, 106.13456], 10);
+    const map = L.map('map').setView([-2.13, 106.13], 10);
     const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
-    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
-    const esriLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { attribution: 'Labels © Esri' });
-    const hybrid = L.layerGroup([esriSat, esriLabels]);
-    const baseMaps = { "Peta Jalan": osm, "Citra Satelit + Label": hybrid };
+    const sat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' });
+    const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}');
+    const hybrid = L.layerGroup([sat, labels]);
     hybrid.addTo(map);
-    L.control.layers(baseMaps).addTo(map);
+    L.control.layers({"Jalan": osm, "Satelit": hybrid}).addTo(map);
 
     let telegramToCodeSF = {}, telegramToName = {}, telegramToRole = {};
     let codeSFWithIO = new Set(), allSFNames = new Set(), absenSFNames = new Set();
@@ -190,7 +201,7 @@
             if (!code || !nama || !role || role !== 'sf' || isNaN(lat) || isNaN(lng)) return;
             absenSFNames.add(nama);
             const hasIO = codeSFWithIO.has(code);
-            const warna = hasIO ? '#4CAF50' : '#2196F3';
+            const warna = hasIO ? '#00e676' : '#2196F3';
             const icon = L.circleMarker([lat, lng], {
               radius: 8,
               color: warna,
@@ -216,7 +227,8 @@
 
           document.getElementById("absenStats").innerHTML = `
             ✅ SF Absen: ${absenSFNames.size}<br>
-            ❌ SF Belum Absen: ${belumAbsen.length}`;
+            ❌ SF Belum Absen: ${belumAbsen.length}
+          `;
         }
       });
     }
@@ -234,6 +246,14 @@
       );
     }
 
+    loadUserdata(() => {
+      loadBulanIni(() => {
+        loadAbsen();
+      });
+    });
+
+    setTimeout(() => location.reload(), 300000);
+
     document.getElementById("btn-left").addEventListener("click", () => {
       const panel = document.getElementById("sidebar-left");
       panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -243,14 +263,6 @@
       const panel = document.getElementById("sidebar-right");
       panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
     });
-
-    loadUserdata(() => {
-      loadBulanIni(() => {
-        loadAbsen();
-      });
-    });
-
-    setTimeout(() => location.reload(), 300000); // auto refresh 5 menit
   </script>
 </body>
 </html>
