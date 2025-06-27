@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Peta Lokasi SF (Absen & Deal)</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    #map { height: 100vh; width: 100%; }
+    #logo {
+      position: absolute;
+      top: 10px;
+      right: 160px;
+      width: 140px;
+      z-index: 999;
+    }
+    #sidebar-left, #sidebar-right {
+      position: absolute;
+      top: 50px;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-size: 14px;
+      max-height: 80vh;
+      overflow-y: auto;
+      display: none;
+    }
+    #sidebar-left { left: 10px; width: 300px; }
+    #sidebar-right { right: 10px; width: 240px; }
+    .toggle-btn {
+      position: absolute;
+      top: 60px;
+      padding: 6px 12px;
+      font-size: 14px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      cursor: pointer;
+      z-index: 1001;
+    }
+    #btn-left { left: 10px; top: 10px; }
+    #btn-right { right: 10px; top: 60px; }
+    #notAbsentListWrapper { margin-top: 10px; }
+    #notAbsentList li { list-style: none; margin-bottom: 4px; }
+    #tanggal-hari-ini {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      font-size: 13px;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <img src="logo_indiHome.png" id="logo" alt="IndiHome" />
+  <div id="map"></div>
+  <div class="toggle-btn" id="btn-left">👤 Cek POS</div>
+  <div class="toggle-btn" id="btn-right">📊 Deal</div>
+  <div id="sidebar-left">
+    <h3>Cek POS</h3>
+    <div id="absenStats">Loading...</div>
+    <div id="notAbsentListWrapper">
+      <ul id="notAbsentList">Loading...</ul>
+    </div>
+  </div>
+  <div id="sidebar-right">
+    <h3>Total Deal Hari Ini</h3>
+    <div id="totalDeal">Loading...</div>
+  </div>
+  <div id="tanggal-hari-ini"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+  <script>
+    document.getElementById("tanggal-hari-ini").textContent =
+      `Hari Ini: ${new Date().toLocaleDateString('id-ID', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      })}`;
+
+    const map = L.map('map').setView([-2.13456, 106.13456], 10);
+
+    const osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' });
+    const esriSat = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: 'Tiles © Esri' });
+    const esriLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { attribution: 'Labels © Esri' });
+
+    const hybrid = L.layerGroup([esriSat, esriLabels]);
+
+    const baseMaps = {
+      "Peta Jalan": osm,
+      "Citra Satelit + Label": hybrid
+    };
+
+    hybrid.addTo(map);
+    L.control.layers(baseMaps).addTo(map);
+  </script>
+</body>
+</html>
