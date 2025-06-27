@@ -7,21 +7,24 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans&display=swap" rel="stylesheet">
   <style>
-    body {
+    html, body {
+      height: 100%;
       margin: 0;
       font-family: 'Plus Jakarta Sans', sans-serif;
       font-size: 13px;
     }
     #map {
       height: 100vh;
-      width: 100%;
+      width: 100vw;
+      position: relative;
+      z-index: 1;
     }
     #logo {
       position: absolute;
       top: 10px;
       right: 160px;
       width: 120px;
-      z-index: 999;
+      z-index: 1002;
     }
     #sidebar-left, #sidebar-right {
       position: absolute;
@@ -30,7 +33,7 @@
       padding: 8px;
       border-radius: 10px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      z-index: 1000;
+      z-index: 1001;
       font-size: 12px;
       max-height: 75vh;
       overflow-y: auto;
@@ -48,7 +51,7 @@
       border: 1px solid #ccc;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       cursor: pointer;
-      z-index: 1001;
+      z-index: 1003;
     }
     #btn-left { left: 10px; top: 10px; }
     #btn-right { right: 10px; top: 60px; }
